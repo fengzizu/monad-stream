@@ -441,7 +441,7 @@ export default function Home() {
 
         {/* Right Column: LLM Terminal */}
         <div className="h-full">
-            <div className="h-full p-1 rounded-3xl bg-gradient-to-br from-[#836EF9] to-[#4FF0FD] p-[1px]">
+            <div className="h-full p-1 rounded-3xl bg-gradient-to-br from-[#836EF9] to-[#4FF0FD] p-[1px] h-[500px] md:h-auto">
                 <div className="h-full rounded-[23px] bg-black p-6 font-mono text-sm relative overflow-hidden flex flex-col">
                     <div className="flex items-center gap-2 mb-4 border-b border-white/10 pb-4">
                         <div className="w-3 h-3 rounded-full bg-red-500" />
