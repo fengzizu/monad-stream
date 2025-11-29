@@ -178,7 +178,7 @@ export default function Home() {
       // Check for depletion
       if (current === 0n && streamData.balance > 0n) {
           // Balance drained locally
-          setLogs(prev => [...prev.slice(-5), `[System] ⚠️ Deposit drained. Stream depleted. Please close to settle.`]);
+          setLogs(prev => [...prev, `[System] ⚠️ Deposit drained. Stream depleted. Please close to settle.`]);
       }
     }, 100); // 100ms update for smoothish animation
 
@@ -193,16 +193,16 @@ export default function Home() {
     if (streamData?.isActive && !isTxPending && !isConfirming) {
       const interval = setInterval(() => {
         const timestamp = new Date().toLocaleTimeString();
-        const log = `[${timestamp}] [x402] Payment Verified (Stream #${streamId}). Generating token... Cost: ${streamData ? formatEther(streamData.flowRate) : '0'} MON... Paid.`;
-        setLogs(prev => [...prev.slice(-5), log]); // Keep last 6 logs
+        // Remove logs.slice limit to keep history
+        setLogs(prev => [...prev, log]); 
       }, 2000);
       return () => clearInterval(interval);
     } else if (isTxPending || isConfirming) {
-        setLogs(prev => [...prev.slice(-5), `[System] Transaction Processing... Please wait.`]);
+        setLogs(prev => [...prev, `[System] Transaction Processing... Please wait.`]);
     } else {
       setLogs(prev => {
         if (prev.length > 0 && prev[prev.length - 1].includes("Error")) return prev;
-         return [...prev.slice(-5), `[${new Date().toLocaleTimeString()}] Error: 402 Payment Required. Please start stream to access Agent.`];
+         return [...prev, `[${new Date().toLocaleTimeString()}] Error: 402 Payment Required. Please start stream to access Agent.`];
       });
     }
   }, [streamData?.isActive, streamId, isTxPending, isConfirming]);
@@ -449,7 +449,7 @@ export default function Home() {
                         <span className="ml-2 text-gray-500 text-xs">agent-terminal — x402-protocol</span>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto space-y-2 font-mono scrollbar-hide">
+                    <div className="flex-1 overflow-y-auto space-y-2 font-mono scrollbar-custom p-2">
                          <div className="text-gray-500">Initializing x402 Payment Protocol...</div>
                          <div className="text-gray-500">Connecting to Monad Stream Contract...</div>
                          <div className="text-green-500">Connected.</div>

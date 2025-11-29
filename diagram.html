@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MonadStream 全景演示</title>
+    <style>
+        body {
+            margin: 0;
+            background: #0f0518;
+            font-family: 'Consolas', 'Monaco', monospace;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px;
+        }
+        
+        /* Header */
+        header { text-align: center; margin-bottom: 60px; }
+        h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(to right, #836EF9, #4FF0FD);
+            -webkit-background-clip: text;
+            color: transparent;
+            margin: 0;
+        }
+        .subtitle { color: #888; margin-top: 10px; font-size: 1.2rem; }
+
+        /* Section Divider */
+        .divider {
+            width: 100%; max-width: 900px; text-align: center; margin: 60px 0 30px 0; border-top: 1px dashed #444; padding-top: 30px;
+            font-size: 1.5rem; color: #4FF0FD; font-weight: bold; text-transform: uppercase; letter-spacing: 2px;
+        }
+
+        /* --- Part 1: Comparison Grid --- */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            max-width: 1000px;
+            width: 100%;
+        }
+        .panel {
+            padding: 30px; border-radius: 16px; position: relative; backdrop-filter: blur(10px);
+        }
+        /* Legacy */
+        .legacy { background: rgba(255, 0, 0, 0.05); border: 1px solid rgba(255, 0, 0, 0.2); }
+        .legacy h2 { color: #ff4d4d; border-bottom: 1px solid rgba(255,0,0,0.2); padding-bottom: 10px; margin-top: 0; }
+        /* Monad */
+        .monad { background: rgba(131, 110, 249, 0.05); border: 1px solid rgba(131, 110, 249, 0.2); box-shadow: 0 0 30px rgba(131, 110, 249, 0.1) inset; }
+        .monad h2 { color: #836EF9; border-bottom: 1px solid rgba(131,110,249,0.2); padding-bottom: 10px; margin-top: 0; }
+
+        .step { display: flex; margin: 15px 0; font-size: 0.9rem; align-items: center; }
+        .step-icon { width: 30px; font-size: 1.2rem; text-align: center; margin-right: 10px; }
+        .step-content { flex: 1; }
+        
+        .stream-flow {
+            height: 40px; margin: 20px 0; background: linear-gradient(90deg, rgba(131,110,249,0.1) 0%, rgba(79,240,253,0.2) 50%, rgba(131,110,249,0.1) 100%);
+            border-radius: 8px; display: flex; align-items: center; justify-content: center; border: 1px dashed rgba(79, 240, 253, 0.3); position: relative; overflow: hidden;
+        }
+        .particle { position: absolute; width: 4px; height: 4px; background: #4FF0FD; border-radius: 50%; box-shadow: 0 0 5px #4FF0FD; animation: flow 1s linear infinite; }
+        @keyframes flow { 0% { left: -10%; opacity: 0; } 20% { opacity: 1; } 80% { opacity: 1; } 100% { left: 110%; opacity: 0; } }
+
+        /* --- Part 2: Scenario & Timeline --- */
+        .scenario-section {
+            width: 100%; max-width: 900px; background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 30px; position: relative;
+        }
+        .timeline { position: relative; padding-left: 30px; border-left: 2px solid rgba(255,255,255,0.1); }
+        .event { margin-bottom: 30px; position: relative; }
+        .event::before { content: ''; position: absolute; left: -36px; top: 5px; width: 10px; height: 10px; border-radius: 50%; background: #444; border: 2px solid #0f0518; }
+        .event.active::before { background: #4FF0FD; box-shadow: 0 0 10px #4FF0FD; }
+        .event-time { color: #888; font-size: 0.8rem; margin-bottom: 4px; }
+        .event-title { color: #fff; font-weight: bold; font-size: 1.1rem; display: flex; align-items: center; gap: 10px; }
+        
+        /* Common Tags */
+        .tag { padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; margin-left: 5px; }
+        .tag-bad { color: #ff4d4d; }
+        .tag-good { color: #4FF0FD; }
+        .tag-blue { background: rgba(79, 240, 253, 0.1); color: #4FF0FD; border: 1px solid rgba(79, 240, 253, 0.3); }
+        .tag-green { background: rgba(0, 255, 0, 0.1); color: #55ff55; border: 1px solid rgba(0, 255, 0, 0.3); }
+        .tag-red { background: rgba(255, 0, 0, 0.1); color: #ff5555; border: 1px solid rgba(255, 0, 0, 0.3); }
+        .tag-purple { background: rgba(131, 110, 249, 0.1); color: #836EF9; border: 1px solid rgba(131, 110, 249, 0.3); }
+
+        /* Details Box */
+        .details { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-top: 10px; font-size: 0.9rem; }
+        .detail-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
+        .detail-val { font-family: 'Courier New', monospace; }
+
+        .actor-a { color: #ff9999; font-weight: bold; }
+        .actor-b { color: #99ff99; font-weight: bold; }
+        .actor-miner { color: #ffff99; font-weight: bold; }
+
+        /* Final Table */
+        .final-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.9rem; }
+        .final-table th { text-align: left; color: #888; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 10px 0; }
+        .final-table td { padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .diff-neg { color: #ff5555; }
+        .diff-pos { color: #55ff55; }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>MonadStream: The Ultimate Comparison</h1>
+        <div class="subtitle">架构优势 vs 落地场景</div>
+    </header>
+
+    <!-- PART 1: Architecture Comparison -->
+    <div class="main-grid">
+        <!-- Legacy -->
+        <div class="panel legacy">
+            <h2>传统模式 (Traditional)</h2>
+            <div class="step">
+                <div class="step-icon">💸</div>
+                <div class="step-content">
+                    <div>1. 发送交易 (Tx 1)</div>
+                    <div class="tag-bad">成本: $5.00 Gas</div>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-icon">⏳</div>
+                <div class="step-content">
+                    <div>2. 等待区块确认</div>
+                    <div class="tag-bad">延迟: 15秒+</div>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-icon">🤖</div>
+                <div class="step-content">
+                    <div>3. 提供服务 (2秒)</div>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-icon">💸</div>
+                <div class="step-content">
+                    <div>4. 再次交易 (Tx 2)</div>
+                    <div class="tag-bad">成本: $5.00 Gas</div>
+                </div>
+            </div>
+            <div style="margin-top: 20px; padding-top: 10px; border-top: 1px solid rgba(255,0,0,0.2); display: flex; justify-content: space-between;">
+                <span class="tag-bad">总耗时: 32秒+</span>
+                <span class="tag-bad">总Gas: $10.00</span>
+            </div>
+        </div>
+
+        <!-- Monad -->
+        <div class="panel monad">
+            <h2>MonadStream</h2>
+            <div class="step">
+                <div class="step-icon">⚡</div>
+                <div class="step-content">
+                    <div>1. 开启流支付</div>
+                    <div class="tag-good">Gas: $0.001 | 耗时: 1秒</div>
+                </div>
+            </div>
+            <div class="stream-flow">
+                <span style="z-index: 2; font-size: 0.8rem; letter-spacing: 1px;">🌊 实时流传输 (0 GAS) 🌊</span>
+                <div class="particle" style="animation-delay: 0s; top: 10%"></div>
+                <div class="particle" style="animation-delay: 0.5s; top: 50%"></div>
+                <div class="particle" style="animation-delay: 0.8s; top: 80%"></div>
+            </div>
+            <div class="step">
+                <div class="step-icon">⚡</div>
+                <div class="step-content">
+                    <div>3. 关闭流结算</div>
+                    <div class="tag-good">Gas: $0.001 | 耗时: 1秒</div>
+                </div>
+            </div>
+            <div style="margin-top: 20px; padding-top: 10px; border-top: 1px solid rgba(131,110,249,0.2); display: flex; justify-content: space-between;">
+                <span class="tag-good">总耗时: 2秒+</span>
+                <span class="tag-good">总Gas: $0.002</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="divider">👇 真实场景深度解析 (Deep Dive) 👇</div>
+    <div class="divider">Agent A 购买 Agent B 5.5秒 渲染服务</div>
+
+    <!-- PART 2: Use Case Scenario -->
+    <div class="scenario-section">
+        <div class="timeline">
+            
+            <!-- Phase 0 -->
+            <div class="event">
+                <div class="event-time">Phase 0: 链下协商 (Off-chain)</div>
+                <div class="event-title">
+                    🤝 握手与报价
+                    <span class="tag tag-green">Gas: 0</span>
+                </div>
+                <div class="details">
+                    <div class="detail-row">
+                        <span>动作: <span class="actor-a">A</span> 请求服务 -> <span class="actor-b">B</span> 报价 0.01 MON/s</span>
+                    </div>
+                    <div class="detail-row">
+                        <span>结果: 达成协议。A 准备开启流支付。</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Phase 1 -->
+            <div class="event active">
+                <div class="event-time">Phase 1: T=0.0s (On-chain)</div>
+                <div class="event-title">
+                    🚀 开启流 (Create Stream)
+                    <span class="tag tag-red">Gas: 0.001 MON</span>
+                    <span class="tag tag-purple">Monad 1s</span>
+                </div>
+                <div class="details">
+                    <div class="detail-row">
+                        <span>资金变动: A 扣除 1.0 MON (押金) + 0.001 MON (Gas)</span>
+                    </div>
+                    <div class="detail-row">
+                        <span>合约状态: Stream #1 Created. Balance: 1.0 MON</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Phase 2 -->
+            <div class="event active">
+                <div class="event-time">Phase 2: T=1.0s ~ 6.5s (Streaming)</div>
+                <div class="event-title">
+                    🌊 服务交付与流支付
+                    <span class="tag tag-green">Gas: 0</span>
+                    <span class="tag tag-blue">Real-time</span>
+                </div>
+                <div class="details">
+                    <div class="detail-row">
+                        <span>服务: <span class="actor-b">B</span> 验证流开启 (x402) -> 提供渲染服务 (5.5s)</span>
+                    </div>
+                    <div class="detail-row">
+                        <span>资金逻辑: 0.01 MON/s 从合约逻辑流向 B (未结算)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Phase 3 -->
+            <div class="event active">
+                <div class="event-time">Phase 3: T=6.5s (On-chain)</div>
+                <div class="event-title">
+                    ✅ 关闭流 (Settlement)
+                    <span class="tag tag-red">Gas: 0.0008 MON</span>
+                    <span class="tag tag-purple">Monad 1s</span>
+                </div>
+                <div class="details">
+                    <div class="detail-row">
+                        <span>结算公式: 5.5s * 0.01 = 0.055 MON (应付)</span>
+                    </div>
+                    <div class="detail-row">
+                        <span>资金划转: 合约 -> <span class="actor-b">B</span>: 0.055 MON; 合约 -> <span class="actor-a">A</span>: 0.945 MON</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Final Table -->
+        <div style="margin-top: 40px; border-top: 1px dashed #444; padding-top: 20px;">
+            <h3>📊 最终清算单 (Final Settlement)</h3>
+            <table class="final-table">
+                <thead>
+                    <tr>
+                        <th>角色</th>
+                        <th>初始余额</th>
+                        <th>最终余额</th>
+                        <th>净变化</th>
+                        <th>说明</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="actor-a">Agent A</span></td>
+                        <td>100.0000</td>
+                        <td>99.9432</td>
+                        <td class="diff-neg">-0.0568</td>
+                        <td>服务费(0.055) + 两笔Gas(0.0018)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="actor-b">Agent B</span></td>
+                        <td>0.0000</td>
+                        <td>0.0550</td>
+                        <td class="diff-pos">+0.0550</td>
+                        <td>纯赚服务费 (0 Gas)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="actor-miner">Miner</span></td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td class="diff-pos">+0.0018</td>
+                        <td>捕获网络价值</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+</body>
+</html>
