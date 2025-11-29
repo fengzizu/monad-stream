@@ -194,6 +194,7 @@ export default function Home() {
       const interval = setInterval(() => {
         const timestamp = new Date().toLocaleTimeString();
         // Remove logs.slice limit to keep history
+        const log = `[${timestamp}] [x402] Payment Verified (Stream #${streamId}). Generating token... Cost: ${streamData ? formatEther(streamData.flowRate) : '0'} MON... Paid.`;
         setLogs(prev => [...prev, log]); 
       }, 2000);
       return () => clearInterval(interval);
